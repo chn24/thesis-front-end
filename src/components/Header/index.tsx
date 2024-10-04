@@ -85,13 +85,13 @@ export const Header = () => {
         if (Object.keys(error).includes("cause")) {
           // @ts-ignore
           toast.error(
-            `Thay đổi trạng thái thất bại: ${
+            `Xác thực thất bại: ${
               // @ts-ignore
               error.cause.details ? error.cause.details : error.cause.reason
             }`
           );
         } else {
-          toast.error("Thêm thất bại");
+          toast.error("Xác thực thất bại");
         }
       }
       setIsSigning(false);

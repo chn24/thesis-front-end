@@ -3,6 +3,7 @@ import React from "react";
 import { useReadContract } from "wagmi";
 import { StatusSetting } from "./components/StatusSetting";
 import { AddProposal } from "./components/AddProposal";
+import { AddNomination } from "./components/AddNomination";
 
 interface Props {
   address: string;
@@ -25,7 +26,8 @@ export const VoteSettingScreen: React.FC<Props> = ({ address }) => {
         status={Number(status ?? 0)}
         refetch={handleRefetch}
       />
-      <AddProposal status={Number(status ?? 0)} address={address} />
+      <AddProposal address={address} />
+      <AddNomination address={address} />
     </div>
   );
 };

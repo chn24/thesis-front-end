@@ -33,9 +33,9 @@ export const VoteResult: React.FC<Props> = ({ address }) => {
   useEffect(() => {
     if (!isPending && data) {
       const newResults: Result[] = [];
-
-      (data as Array<ResultOG>).forEach((item) => {
+      ((data as Array<any>)[0] as Array<ResultOG>).forEach((item) => {
         const total = Number(item.agree + item.ignore + item.noComment);
+
         if (total === 0) {
           const obj: Result = {
             percent: 0,

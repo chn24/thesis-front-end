@@ -15,7 +15,7 @@ export default function LoginPage() {
           return response.json();
         }
       })
-      .then((data: any) => {
+      .then((data) => {
         if (data) {
           setUser(data.user);
           router.push("/");

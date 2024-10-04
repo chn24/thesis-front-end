@@ -92,6 +92,19 @@ const abi = [
     inputs: [
       {
         internalType: "bytes[]",
+        name: "listNomination",
+        type: "bytes[]",
+      },
+    ],
+    name: "addNomination",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes[]",
         name: "contents",
         type: "bytes[]",
       },
@@ -127,6 +140,36 @@ const abi = [
   },
   {
     inputs: [],
+    name: "getAllNominations",
+    outputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+      {
+        components: [
+          {
+            internalType: "uint16",
+            name: "index",
+            type: "uint16",
+          },
+          {
+            internalType: "bytes",
+            name: "content",
+            type: "bytes",
+          },
+        ],
+        internalType: "struct IVoting.Nomination[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "getAllResults",
     outputs: [
       {
@@ -150,6 +193,57 @@ const abi = [
         internalType: "struct IVoting.Result[]",
         name: "",
         type: "tuple[]",
+      },
+      {
+        components: [
+          {
+            internalType: "uint16",
+            name: "index",
+            type: "uint16",
+          },
+          {
+            internalType: "bytes",
+            name: "content",
+            type: "bytes",
+          },
+          {
+            internalType: "uint128",
+            name: "totalVote",
+            type: "uint128",
+          },
+        ],
+        internalType: "struct IVoting.NominationResult[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "index",
+        type: "uint16",
+      },
+    ],
+    name: "getResultOfNomination",
+    outputs: [
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
+      },
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+      {
+        internalType: "uint128",
+        name: "",
+        type: "uint128",
       },
     ],
     stateMutability: "view",
@@ -215,12 +309,87 @@ const abi = [
         type: "address",
       },
     ],
-    name: "isVoted",
+    name: "isNominationVoted",
     outputs: [
       {
         internalType: "bool",
         name: "",
         type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    name: "isProposalVoted",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "limitNominationVoted",
+    outputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+    ],
+    name: "nominationVoteCount",
+    outputs: [
+      {
+        internalType: "uint128",
+        name: "",
+        type: "uint128",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
+      },
+    ],
+    name: "nominations",
+    outputs: [
+      {
+        internalType: "bytes",
+        name: "",
+        type: "bytes",
       },
     ],
     stateMutability: "view",
@@ -291,6 +460,19 @@ const abi = [
   {
     inputs: [
       {
+        internalType: "uint16",
+        name: "_limitNominationVoted",
+        type: "uint16",
+      },
+    ],
+    name: "setLimitNominationVoted",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "enum IVoting.STATUS",
         name: "_status",
         type: "uint8",
@@ -309,6 +491,19 @@ const abi = [
         internalType: "enum IVoting.STATUS",
         name: "",
         type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalNomination",
+    outputs: [
+      {
+        internalType: "uint16",
+        name: "",
+        type: "uint16",
       },
     ],
     stateMutability: "view",
@@ -377,6 +572,11 @@ const abi = [
         internalType: "struct IVoting.Answer[]",
         name: "answers",
         type: "tuple[]",
+      },
+      {
+        internalType: "uint16[]",
+        name: "nominationIndexs",
+        type: "uint16[]",
       },
     ],
     name: "vote",

@@ -1,13 +1,11 @@
 import React from "react";
-import { ListProposal } from "./components/ListProposal";
-import { useReadContract, useWriteContract } from "wagmi";
+import { List } from "./components/List";
+import { useReadContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
-import { Button } from "@mui/material";
-import { userStore } from "@/store/userStore";
-import { AddProposal } from "../VoteSettingScreen/components/AddProposal";
-import { StatusSetting } from "../VoteSettingScreen/components/StatusSetting";
 import { VoteResult } from "./components/VoteResult";
 import { Delegate } from "./components/Delegate";
+import { userStore } from "@/store/userStore";
+import Link from "next/link";
 
 interface Props {
   address: string;
@@ -53,34 +51,28 @@ export const statusInfos: StatusInfo[] = [
 ];
 
 export const VotingScreen: React.FC<Props> = ({ address }) => {
-  const { data: status, refetch } = useReadContract({
+  const user = userStore((state) => state.user);
+  const { data: status } = useReadContract({
     abi: getVotingAbi(),
     // @ts-ignore
     address,
     functionName: "status",
   });
-  const user = userStore((state) => state.user);
-  const handleRefetch = async () => {
-    await refetch();
-  };
 
   return (
     <div className="px-20 py-10 flex flex-col gap-5">
-      <Delegate />
-      <div className="p-10 bg-slate-100 shadow-lg rounded-lg">
-        <div className="flex justify-between items-center">
-          <p className="text-3xl font-semibold">Danh sách đề xuất</p>
-          {typeof status !== "undefined" && (
-            <p
-              className="text-lg font-semibold"
-              style={{ color: statusInfos[Number(status)].textColor }}
-            >
-              {statusInfos[Number(status)].text}
-            </p>
-          )}
+      {user?.role === "ADMIN" && (
+        <div>
+          <Link
+            className="text-gray-300 hover:text-[#c5dff9]"
+            href={`/vote-setting/${address}`}
+          >
+            Trang quản lý bầu cử
+          </Link>
         </div>
-        <ListProposal address={address} />
-      </div>
+      )}
+      <Delegate />
+      <List status={status} address={address} />
       <VoteResult address={address} />
     </div>
   );

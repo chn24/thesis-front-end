@@ -9,7 +9,6 @@ import { AbiCoder } from "ethers/abi";
 import { toast } from "react-toastify";
 
 interface Props {
-  status: number;
   address: string;
 }
 
@@ -18,7 +17,7 @@ type NewProposal = {
   isImportant: boolean;
 };
 
-export const AddProposal: React.FC<Props> = ({ address, status }) => {
+export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
   const {
     data: hash,
@@ -84,7 +83,7 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
       if (Object.keys(error).includes("cause")) {
         // @ts-ignore
         toast.error(
-          `Thay đổi trạng thái thất bại: ${
+          `Thêm đề xuất thất bại: ${
             // @ts-ignore
             error.cause.details ? error.cause.details : error.cause.reason
           }`
@@ -96,33 +95,31 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
   };
 
   return (
-    <div>
-      <div className="px-14 py-10 bg-slate-100 rounded-xl min-h-[300px]">
-        <div className="flex gap-3">
-          <p className="text-3xl font-semibold">Thêm đề xuất</p>
-          <IconButton color="success" onClick={handleNewProposal}>
-            <AddCircleIcon fontSize="medium" />
-          </IconButton>
-        </div>
+    <div className="px-14 py-10 bg-slate-100 rounded-xl min-h-[300px]">
+      <div className="flex gap-3">
+        <p className="text-3xl font-semibold">Thêm đề xuất</p>
+        <IconButton color="success" onClick={handleNewProposal}>
+          <AddCircleIcon fontSize="medium" />
+        </IconButton>
+      </div>
 
-        <div className="mx-auto mt-5 flex flex-col gap-5 justify-around items-center">
-          <div className="w-full flex justify-around px-6 py-4 border-[1px] border-[#1976d2] rounded-xl">
-            <div className="w-[5%]">#</div>
-            <div className="w-[70%] text-left">Đề xuất</div>
-            <div className="w-[15%] text-center">Quan trọng</div>
-            <div className="w-[5%] text-center"></div>
-          </div>
-          {newProposals.map((newProposal, index) => (
-            <AddProposalItem
-              key={index}
-              index={index}
-              handleProposalChange={handleProposalChange}
-              handleRemoveProposal={handleRemoveProposal}
-              handleIsImportantProposal={handleIsImportantProposal}
-            />
-          ))}
-          <Button onClick={handleSubmit}>Xác nhận</Button>
+      <div className="mx-auto mt-5 flex flex-col gap-5 justify-around items-center">
+        <div className="w-full flex justify-around px-6 py-4 border-[1px] border-[#1976d2] rounded-xl">
+          <div className="w-[5%]">#</div>
+          <div className="w-[70%] text-left">Đề xuất</div>
+          <div className="w-[15%] text-center">Quan trọng</div>
+          <div className="w-[5%] text-center"></div>
         </div>
+        {newProposals.map((newProposal, index) => (
+          <AddProposalItem
+            key={index}
+            index={index}
+            handleProposalChange={handleProposalChange}
+            handleRemoveProposal={handleRemoveProposal}
+            handleIsImportantProposal={handleIsImportantProposal}
+          />
+        ))}
+        <Button onClick={handleSubmit}>Xác nhận</Button>
       </div>
     </div>
   );

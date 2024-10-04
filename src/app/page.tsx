@@ -24,8 +24,6 @@ export default function Home() {
       })
       .then((data: any) => {
         if (data) {
-          console.log("data: ", data);
-          
           setUser(data.user);
         }
       });
