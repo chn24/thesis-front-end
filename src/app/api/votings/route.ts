@@ -7,7 +7,15 @@ export async function GET(req: NextRequest, res: NextResponse) {
     const db: Db = await getMongoDb();
     const votingsCollection: Collection = db.collection("votings");
 
-    const votings = await votingsCollection.aggregate().toArray();
+    const votings = await votingsCollection
+      .aggregate([
+        {
+          $sort: {
+            date: -1,
+          },
+        },
+      ])
+      .toArray();
 
     return NextResponse.json({
       votings,

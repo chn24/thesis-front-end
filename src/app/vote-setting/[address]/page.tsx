@@ -1,11 +1,16 @@
 "use client";
-import { LandingScreen } from "@/components/screen/LandingScreen";
+import { VoteSettingScreen } from "@/components/screen/VoteSettingScreen";
+import { VotingScreen } from "@/components/screen/Voting";
 import { userStore } from "@/store/userStore";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
 
-export default function Home() {
+export default function VoteSettingPage({
+  params,
+}: {
+  params: { address: string };
+}) {
   const router = useRouter();
   const setUser = userStore((state) => state.setUser);
 
@@ -24,8 +29,6 @@ export default function Home() {
       })
       .then((data: any) => {
         if (data) {
-          console.log("data: ", data);
-          
           setUser(data.user);
         }
       });
@@ -34,6 +37,5 @@ export default function Home() {
   useEffect(() => {
     void handleAuth();
   }, []);
-
-  return <LandingScreen />;
+  return <VoteSettingScreen address={params.address} />;
 }

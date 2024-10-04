@@ -4,6 +4,8 @@ import { ProposalRow } from "./ProposalRow";
 import { Button, SelectChangeEvent } from "@mui/material";
 import { useWriteContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
+import { toast } from "react-toastify";
+import { Spinner } from "@/components/common/Spinner";
 
 interface Props {
   address: string;
@@ -29,8 +31,10 @@ export enum OPTION {
 export const ListProposal: React.FC<Props> = ({ address }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const { data, writeContractAsync } = useWriteContract();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const getProposals = async () => {
+    setIsLoading(true);
     const response = await fetch(`/api/votings/${address}`);
     const data = await response.json();
     const mockProposals: Proposal[] = [...data.proposals];
@@ -38,6 +42,7 @@ export const ListProposal: React.FC<Props> = ({ address }) => {
       proposal.option = OPTION.AGREE;
     });
     setProposals([...mockProposals]);
+    setIsLoading(false);
   };
 
   const handleOptionChange = (index: number, e: SelectChangeEvent<OPTION>) => {
@@ -49,24 +54,40 @@ export const ListProposal: React.FC<Props> = ({ address }) => {
   };
 
   const handleSubmit = async () => {
-    const answers: Answer[] = [];
-    proposals.forEach((proposal) => {
-      const answer: Answer = {
-        index: proposal.index,
-        option: proposal.option,
-      };
-      answers.push(answer);
-    });
+    try {
+      const answers: Answer[] = [];
+      proposals.forEach((proposal) => {
+        const answer: Answer = {
+          index: proposal.index,
+          option: proposal.option,
+        };
+        answers.push(answer);
+      });
 
-    const abi = getVotingAbi();
+      const abi = getVotingAbi();
 
-    await writeContractAsync({
-      abi,
-      functionName: "vote",
+      await writeContractAsync({
+        abi,
+        functionName: "vote",
+        // @ts-ignore
+        address,
+        args: [answers],
+      });
+      toast.success("Bỏ phiếu thành công");
+    } catch (error) {
       // @ts-ignore
-      address,
-      args: [answers],
-    });
+      if (Object.keys(error).includes("cause")) {
+        // @ts-ignore
+        toast.error(
+          `Bỏ phiếu thất bại: ${
+            // @ts-ignore
+            error.cause.details ? error.cause.details : error.cause.reason
+          }`
+        );
+      } else {
+        toast.error("Bỏ phiếu thất bại");
+      }
+    }
   };
 
   useEffect(() => {
@@ -79,6 +100,11 @@ export const ListProposal: React.FC<Props> = ({ address }) => {
         <div className="w-[70%] text-left">Đề xuất</div>
         <div className="w-1/4 text-center">Ý kiến</div>
       </div>
+      {isLoading && (
+        <div className="w-full flex justify-center items-center">
+          <Spinner size={32} />
+        </div>
+      )}
       {proposals.map((proposal, index) => (
         <ProposalRow
           key={proposal.index}
@@ -87,13 +113,12 @@ export const ListProposal: React.FC<Props> = ({ address }) => {
           handleOptionChange={handleOptionChange}
         />
       ))}
-      <Button
-        variant="contained"
-        className="mx-auto w-maxl"
+      <button
+        className="mx-auto w-max px-4 py-2 text-white text-sm uppercase bg-[#1976d2] rounded-lg hover:opacity-70 duration-300"
         onClick={handleSubmit}
       >
         Xác nhận
-      </Button>
+      </button>
     </div>
   );
 };

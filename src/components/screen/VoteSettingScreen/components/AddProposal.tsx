@@ -83,7 +83,12 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
       // @ts-ignore
       if (Object.keys(error).includes("cause")) {
         // @ts-ignore
-        toast.error(`Thêm thất bại: ${error.cause.reason}`);
+        toast.error(
+          `Thay đổi trạng thái thất bại: ${
+            // @ts-ignore
+            error.cause.details ? error.cause.details : error.cause.reason
+          }`
+        );
       } else {
         toast.error("Thêm thất bại");
       }
@@ -92,7 +97,7 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
 
   return (
     <div>
-      <div className="px-14 py-10 bg-slate-200 rounded-xl min-h-[300px]">
+      <div className="px-14 py-10 bg-slate-100 rounded-xl min-h-[300px]">
         <div className="flex gap-3">
           <p className="text-3xl font-semibold">Thêm đề xuất</p>
           <IconButton color="success" onClick={handleNewProposal}>
@@ -100,7 +105,7 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
           </IconButton>
         </div>
 
-        <div className="mx-auto mt-5 flex flex-col gap-5 justify-around">
+        <div className="mx-auto mt-5 flex flex-col gap-5 justify-around items-center">
           <div className="w-full flex justify-around px-6 py-4 border-[1px] border-[#1976d2] rounded-xl">
             <div className="w-[5%]">#</div>
             <div className="w-[70%] text-left">Đề xuất</div>
@@ -116,8 +121,8 @@ export const AddProposal: React.FC<Props> = ({ address, status }) => {
               handleIsImportantProposal={handleIsImportantProposal}
             />
           ))}
+          <Button onClick={handleSubmit}>Xác nhận</Button>
         </div>
-        <Button onClick={handleSubmit}>Xác nhận</Button>
       </div>
     </div>
   );

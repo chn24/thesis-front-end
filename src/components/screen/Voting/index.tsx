@@ -4,8 +4,10 @@ import { useReadContract, useWriteContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
 import { Button } from "@mui/material";
 import { userStore } from "@/store/userStore";
-import { AddProposal } from "./components/AddProposal";
-import { StatusSetting } from "./components/StatusSetting";
+import { AddProposal } from "../VoteSettingScreen/components/AddProposal";
+import { StatusSetting } from "../VoteSettingScreen/components/StatusSetting";
+import { VoteResult } from "./components/VoteResult";
+import { Delegate } from "./components/Delegate";
 
 interface Props {
   address: string;
@@ -51,35 +53,35 @@ export const statusInfos: StatusInfo[] = [
 ];
 
 export const VotingScreen: React.FC<Props> = ({ address }) => {
-  const {
-    data: status,
-    isPending,
-    error,
-    refetch,
-  } = useReadContract({
+  const { data: status, refetch } = useReadContract({
     abi: getVotingAbi(),
     // @ts-ignore
     address,
     functionName: "status",
   });
   const user = userStore((state) => state.user);
+  const handleRefetch = async () => {
+    await refetch();
+  };
 
   return (
     <div className="px-20 py-10 flex flex-col gap-5">
-      <StatusSetting status={Number(status ?? 0)} />
-      <AddProposal status={Number(status ?? 0)} address={address} />
-      <div className="flex justify-between items-center">
-        <p className="text-5xl font-semibold">Danh sách đề xuất</p>
-        {typeof status !== "undefined" && user?.role !== "ADMIN" && (
-          <p
-            className="text-lg font-semibold"
-            style={{ color: statusInfos[Number(status)].textColor }}
-          >
-            {statusInfos[Number(status)].text}
-          </p>
-        )}
+      <Delegate />
+      <div className="p-10 bg-slate-100 shadow-lg rounded-lg">
+        <div className="flex justify-between items-center">
+          <p className="text-3xl font-semibold">Danh sách đề xuất</p>
+          {typeof status !== "undefined" && (
+            <p
+              className="text-lg font-semibold"
+              style={{ color: statusInfos[Number(status)].textColor }}
+            >
+              {statusInfos[Number(status)].text}
+            </p>
+          )}
+        </div>
+        <ListProposal address={address} />
       </div>
-      <ListProposal address={address} />
+      <VoteResult address={address} />
     </div>
   );
 };

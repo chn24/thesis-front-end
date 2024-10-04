@@ -110,7 +110,7 @@ const abi = [
         type: "bytes32",
       },
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -315,11 +315,6 @@ const abi = [
   {
     inputs: [
       {
-        internalType: "address",
-        name: "evmAddress",
-        type: "address",
-      },
-      {
         internalType: "uint128",
         name: "amount",
         type: "uint128",
@@ -331,19 +326,6 @@ const abi = [
       },
     ],
     name: "verify",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint128",
-        name: "amount",
-        type: "uint128",
-      },
-    ],
-    name: "verifyBalance",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

@@ -2,22 +2,21 @@ import { getVotingAbi } from "@/abi/votingAbi";
 import { Button } from "@mui/material";
 import React, { useEffect } from "react";
 import { useWriteContract } from "wagmi";
-import { statusInfos } from "..";
+import { statusInfos } from "../../Voting";
 import { toast } from "react-toastify";
 
 interface Props {
   status: number;
+  address: string;
+  refetch: () => Promise<void>;
 }
 
-export const StatusSetting: React.FC<Props> = ({ status }) => {
-  const {
-    data: hash,
-    writeContractAsync,
-    isPending,
-    isSuccess,
-    isError,
-    error,
-  } = useWriteContract();
+export const StatusSetting: React.FC<Props> = ({
+  status,
+  address,
+  refetch,
+}) => {
+  const { writeContractAsync } = useWriteContract();
 
   const handleSetStatus = async (status: number) => {
     try {
@@ -29,11 +28,17 @@ export const StatusSetting: React.FC<Props> = ({ status }) => {
         args: [status],
       });
       toast.success("Thay đổi trạng thái thành công");
+      await refetch();
     } catch (error) {
       // @ts-ignore
       if (Object.keys(error).includes("cause")) {
         // @ts-ignore
-        toast.error(`Thay đổi trạng thái thất bại: ${error.cause.reason}`);
+        toast.error(
+          `Thay đổi trạng thái thất bại: ${
+            // @ts-ignore
+            error.cause.details ? error.cause.details : error.cause.reason
+          }`
+        );
       } else {
         toast.error("Thay đổi trạng thái thất bại");
       }
@@ -41,7 +46,7 @@ export const StatusSetting: React.FC<Props> = ({ status }) => {
   };
 
   return (
-    <div className="px-14 py-10 bg-slate-200 rounded-xl flex items-center justify-between">
+    <div className="px-14 py-10 bg-slate-100 rounded-xl flex items-center justify-between">
       <div>
         <p className="text-3xl font-semibold">Trạng thái</p>
         <p

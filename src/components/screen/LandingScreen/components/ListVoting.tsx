@@ -16,7 +16,6 @@ export const ListVoting = () => {
     const response = await fetch("/api/votings");
     const data = await response.json();
     setVotings(data.votings);
-    console.log(data);
   };
   useEffect(() => {
     void getVotings();

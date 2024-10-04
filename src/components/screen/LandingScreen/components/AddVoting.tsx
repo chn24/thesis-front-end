@@ -50,8 +50,12 @@ export const AddVoting = () => {
     } catch (error) {
       // @ts-ignore
       if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
-        toast.error(`Thêm thất bại: ${error.cause.reason}`);
+        toast.error(
+          `Thêm thất bại: ${
+            // @ts-ignore
+            error.cause.details ? error.cause.details : error.cause.reason
+          }`
+        );
       } else {
         toast.error("Thêm thất bại");
       }
