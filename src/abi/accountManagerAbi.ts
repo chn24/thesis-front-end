@@ -58,6 +58,30 @@ const abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "bytes32",
+        name: "",
+        type: "bytes32",
+      },
+      {
+        internalType: "uint24",
+        name: "",
+        type: "uint24",
+      },
+    ],
+    name: "emailVerified",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "getCurrentBalance",
     outputs: [
@@ -100,6 +124,11 @@ const abi = [
         internalType: "uint128",
         name: "amount",
         type: "uint128",
+      },
+      {
+        internalType: "bytes32",
+        name: "email",
+        type: "bytes32",
       },
     ],
     name: "getMessageHash",
@@ -323,6 +352,11 @@ const abi = [
         internalType: "bytes",
         name: "signature",
         type: "bytes",
+      },
+      {
+        internalType: "bytes32",
+        name: "email",
+        type: "bytes32",
       },
     ],
     name: "verify",

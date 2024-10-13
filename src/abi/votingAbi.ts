@@ -122,6 +122,19 @@ const abi = [
   {
     inputs: [
       {
+        internalType: "bytes",
+        name: "data",
+        type: "bytes",
+      },
+    ],
+    name: "checkBytesEmpty",
+    outputs: [],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "address",
         name: "_user",
         type: "address",
@@ -170,6 +183,41 @@ const abi = [
   },
   {
     inputs: [],
+    name: "getAllProposals",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "bytes",
+            name: "content",
+            type: "bytes",
+          },
+          {
+            internalType: "bool",
+            name: "isImportant",
+            type: "bool",
+          },
+          {
+            internalType: "uint128",
+            name: "totalVote",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "agreeCount",
+            type: "uint128",
+          },
+        ],
+        internalType: "struct IVoting.Proposal[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "getAllResults",
     outputs: [
       {
@@ -181,12 +229,7 @@ const abi = [
           },
           {
             internalType: "uint256",
-            name: "ignore",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "noComment",
+            name: "totalVote",
             type: "uint256",
           },
         ],
@@ -259,11 +302,6 @@ const abi = [
     ],
     name: "getResultOfProposal",
     outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
       {
         internalType: "uint256",
         name: "",
@@ -446,6 +484,11 @@ const abi = [
         name: "totalVote",
         type: "uint128",
       },
+      {
+        internalType: "uint128",
+        name: "agreeCount",
+        type: "uint128",
+      },
     ],
     stateMutability: "view",
     type: "function",
@@ -531,6 +574,42 @@ const abi = [
       },
     ],
     name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes[]",
+        name: "listNomination",
+        type: "bytes[]",
+      },
+      {
+        internalType: "uint16[]",
+        name: "nominationIdxs",
+        type: "uint16[]",
+      },
+    ],
+    name: "updateNominations",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes[]",
+        name: "contents",
+        type: "bytes[]",
+      },
+      {
+        internalType: "uint16[]",
+        name: "proposalIdxs",
+        type: "uint16[]",
+      },
+    ],
+    name: "updateProposals",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

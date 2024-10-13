@@ -1,7 +1,6 @@
 import React from "react";
-import { Proposal } from "./List";
 import { MenuItem, Select, SelectChangeEvent } from "@mui/material";
-import { OPTION } from "./List";
+import { OPTION, Proposal } from "@/utils/type";
 
 interface Props {
   proposal: Proposal;

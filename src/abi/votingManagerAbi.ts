@@ -113,6 +113,41 @@ const abi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "getAllVoting",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint24",
+            name: "date",
+            type: "uint24",
+          },
+          {
+            internalType: "uint24",
+            name: "index",
+            type: "uint24",
+          },
+          {
+            internalType: "address",
+            name: "contractAddress",
+            type: "address",
+          },
+          {
+            internalType: "bytes",
+            name: "title",
+            type: "bytes",
+          },
+        ],
+        internalType: "struct IVotingManager.Voting[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "address",
@@ -263,9 +298,24 @@ const abi = [
     name: "votings",
     outputs: [
       {
+        internalType: "uint24",
+        name: "date",
+        type: "uint24",
+      },
+      {
+        internalType: "uint24",
+        name: "index",
+        type: "uint24",
+      },
+      {
         internalType: "address",
-        name: "",
+        name: "contractAddress",
         type: "address",
+      },
+      {
+        internalType: "bytes",
+        name: "title",
+        type: "bytes",
       },
     ],
     stateMutability: "view",

@@ -2,40 +2,18 @@
 import React, { useEffect, useState } from "react";
 import { ProposalRow } from "./ProposalRow";
 import { Button, SelectChangeEvent } from "@mui/material";
-import { useReadContract, useWriteContract } from "wagmi";
+import { useReadContract, useReadContracts, useWriteContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
 import { toast } from "react-toastify";
 import { Spinner } from "@/components/common/Spinner";
 import { statusInfos } from "..";
 import { AbiCoder } from "ethers/abi";
 import { NominationItem } from "./NominationRow";
+import { Answer, Nomination, OPTION, Proposal } from "@/utils/type";
 
 interface Props {
   address: string;
   status: unknown;
-}
-
-export type Proposal = {
-  content: string;
-  index: number;
-  isImportant: boolean;
-  option: OPTION;
-};
-
-export type Nomination = {
-  index: number;
-  content: string;
-};
-
-export type Answer = {
-  index: number;
-  option: OPTION;
-};
-
-export enum OPTION {
-  AGREE,
-  IGNORE,
-  NO_COMMENT,
 }
 export const List: React.FC<Props> = ({ address, status }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -44,26 +22,23 @@ export const List: React.FC<Props> = ({ address, status }) => {
     nominations: Nomination[];
   }>({ limit: 0, nominations: [] });
   const [chosenNomination, setChosenNomination] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { writeContractAsync } = useWriteContract();
-  const { data, isPending } = useReadContract({
-    abi: getVotingAbi(),
-    // @ts-ignore
-    address,
-    functionName: "getAllNominations",
+  const { data, isPending } = useReadContracts({
+    contracts: [
+      {
+        abi: getVotingAbi(),
+        // @ts-ignore
+        address,
+        functionName: "getAllNominations",
+      },
+      {
+        abi: getVotingAbi(),
+        // @ts-ignore
+        address,
+        functionName: "getAllProposals",
+      },
+    ],
   });
-
-  const getProposals = async () => {
-    setIsLoading(true);
-    const response = await fetch(`/api/votings/${address}`);
-    const data = await response.json();
-    const mockProposals: Proposal[] = [...data.proposals];
-    mockProposals.forEach((proposal) => {
-      proposal.option = OPTION.AGREE;
-    });
-    setProposals([...mockProposals]);
-    setIsLoading(false);
-  };
 
   const handleOptionChange = (index: number, e: SelectChangeEvent<OPTION>) => {
     const value = e.target.value;
@@ -126,15 +101,15 @@ export const List: React.FC<Props> = ({ address, status }) => {
   };
 
   useEffect(() => {
-    void getProposals();
-  }, []);
-
-  useEffect(() => {
     const abi = new AbiCoder();
+
     if (!isPending && data) {
-      const limit: number = Number((data as Array<any>)[0]);
-      const arr: Nomination[] = [...(data as Array<any>)[1]];
+      const limit: number = Number((data as Array<any>)[0].result[0]);
+      const arr: Nomination[] = [...(data as Array<any>)[0].result[1]];
+      const arr2: Proposal[] = [...(data as Array<any>)[1].result];
+
       const mockNominations: Nomination[] = [];
+      const mockProposals: Proposal[] = [];
 
       arr.forEach((item) => {
         const content = abi.decode(["string"], item.content)[0];
@@ -144,11 +119,22 @@ export const List: React.FC<Props> = ({ address, status }) => {
         };
         mockNominations.push(obj);
       });
+      arr2.forEach((item, index) => {
+        const obj: Proposal = {
+          index: index + 1,
+          content: abi.decode(["string"], item.content)[0],
+          isImportant: item.isImportant,
+          option: OPTION.AGREE,
+        };
+        mockProposals.push(obj);
+      });
 
       setNominations({
         limit,
         nominations: [...mockNominations],
       });
+
+      setProposals([...mockProposals]);
     }
   }, [isPending]);
 
@@ -172,7 +158,7 @@ export const List: React.FC<Props> = ({ address, status }) => {
             <div className="w-[70%] text-left">Đề xuất</div>
             <div className="w-1/4 text-center">Ý kiến</div>
           </div>
-          {isLoading && (
+          {isPending && (
             <div className="w-full flex justify-center items-center">
               <Spinner size={32} />
             </div>

@@ -1,8 +1,8 @@
 import React from "react";
-import { Result } from "./VoteResult";
+import { ProposalResult } from "./VoteResult";
 
 interface Props {
-  result: Result;
+  result: ProposalResult;
   index: number;
 }
 

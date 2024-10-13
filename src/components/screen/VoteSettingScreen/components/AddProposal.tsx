@@ -2,31 +2,27 @@
 import { getVotingAbi } from "@/abi/votingAbi";
 import { Button, IconButton } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useWriteContract } from "wagmi";
-import { AddProposalItem } from "./AddProposalItem";
+import { useReadContract, useWriteContract } from "wagmi";
+import { ProposalItem } from "./ProposalItem";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { AbiCoder } from "ethers/abi";
 import { toast } from "react-toastify";
+import { NewProposal } from "@/utils/type";
 
 interface Props {
   address: string;
 }
 
-type NewProposal = {
-  content: string;
-  isImportant: boolean;
-};
-
 export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
-  const {
-    data: hash,
-    writeContractAsync,
-    isPending,
-    isSuccess,
-    isError,
-    error,
-  } = useWriteContract();
+  const [proposals, setProposals] = useState<NewProposal[]>([]);
+  const { writeContractAsync } = useWriteContract();
+  const { data, isPending } = useReadContract({
+    abi: getVotingAbi(),
+    // @ts-ignore
+    address,
+    functionName: "getAllProposals",
+  });
 
   const handleNewProposal = () => {
     setNewProposals((prev) => [...prev, { content: "", isImportant: false }]);
@@ -39,21 +35,50 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
     setNewProposals([...copiedArr]);
   };
 
-  const handleProposalChange = (index: number, content: string) => {
-    const copiedArr = [...newProposals];
+  const handleProposalChange = (
+    index: number,
+    content: string,
+    isUpdate: boolean
+  ) => {
+    if (isUpdate) {
+      const copiedArr = [...proposals];
 
-    copiedArr[index].content = content;
-    setNewProposals([...copiedArr]);
+      copiedArr[index].content = content;
+      setProposals([...copiedArr]);
+    } else {
+      const copiedArr = [...newProposals];
+
+      copiedArr[index].content = content;
+      setNewProposals([...copiedArr]);
+    }
   };
 
   const handleIsImportantProposal = (
     e: React.ChangeEvent<HTMLInputElement>,
+    isUpdate: boolean,
     index: number
   ) => {
-    const copiedArr = [...newProposals];
+    if (isUpdate) {
+      const copiedArr = [...proposals];
 
-    copiedArr[index].isImportant = e.target.checked;
-    setNewProposals([...copiedArr]);
+      copiedArr[index].isImportant = e.target.checked;
+      setProposals([...copiedArr]);
+    } else {
+      const copiedArr = [...newProposals];
+
+      copiedArr[index].isImportant = e.target.checked;
+      setNewProposals([...copiedArr]);
+    }
+  };
+
+  const handleChooseProposal = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const copiedArr = [...proposals];
+
+    copiedArr[index].isChosen = e.target.checked;
+    setProposals([...copiedArr]);
   };
 
   const handleSubmit = async () => {
@@ -94,8 +119,68 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
     }
   };
 
+  const handleUpdate = async () => {
+    try {
+      const abi = new AbiCoder();
+      const contents: string[] = [];
+      const ids: number[] = [];
+
+      proposals.forEach((proposal, index) => {
+        if (proposal.isChosen) {
+          const content = abi.encode(["string"], [proposal.content]);
+          contents.push(content);
+          ids.push(index + 1);
+        }
+      });
+
+      if (contents.length === 0) {
+        return;
+      }
+      await writeContractAsync({
+        abi: getVotingAbi(),
+        functionName: "updateProposals",
+        // @ts-ignore
+        address,
+        args: [contents, ids],
+      });
+      toast.success("Sửa thành công");
+    } catch (error) {
+      // @ts-ignore
+      if (Object.keys(error).includes("cause")) {
+        // @ts-ignore
+        toast.error(
+          `Sửa thất bại: ${
+            // @ts-ignore
+            error.cause.details ? error.cause.details : error.cause.reason
+          }`
+        );
+      } else {
+        toast.error("Sửa thất bại");
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isPending && data) {
+      const abi = new AbiCoder();
+      const mockProposals: NewProposal[] = [];
+
+      (data as Array<any>).forEach((item) => {
+        const obj: NewProposal = {
+          content: abi.decode(["string"], item.content)[0],
+          isImportant: item.isImportant,
+          isChosen: false,
+        };
+
+        mockProposals.push(obj);
+      });
+
+      setProposals([...mockProposals]);
+    }
+  }, [isPending]);
+
   return (
-    <div className="px-14 py-10 bg-slate-100 rounded-xl min-h-[300px]">
+    <div className="px-14 py-10 bg-slate-100 rounded-xl">
       <div className="flex gap-3">
         <p className="text-3xl font-semibold">Thêm đề xuất</p>
         <IconButton color="success" onClick={handleNewProposal}>
@@ -110,16 +195,46 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
           <div className="w-[15%] text-center">Quan trọng</div>
           <div className="w-[5%] text-center"></div>
         </div>
-        {newProposals.map((newProposal, index) => (
-          <AddProposalItem
+        {proposals.map((proposal, index) => (
+          <ProposalItem
             key={index}
             index={index}
+            proposal={proposal}
+            isUpdate={true}
             handleProposalChange={handleProposalChange}
             handleRemoveProposal={handleRemoveProposal}
             handleIsImportantProposal={handleIsImportantProposal}
+            handleChooseProposal={handleChooseProposal}
           />
         ))}
-        <Button onClick={handleSubmit}>Xác nhận</Button>
+        {proposals.length > 0 && (
+          <div
+            className={`w-full flex justify-center ${
+              newProposals.length > 0
+                ? "pb-4 border-b-[1px] border-[#1976d2]"
+                : ""
+            }`}
+          >
+            <Button onClick={handleUpdate}>Sửa</Button>
+          </div>
+        )}
+
+        {newProposals.map((newProposal, index) => (
+          <ProposalItem
+            key={index}
+            index={index}
+            isUpdate={false}
+            proposal={newProposal}
+            handleProposalChange={handleProposalChange}
+            handleRemoveProposal={handleRemoveProposal}
+            handleIsImportantProposal={handleIsImportantProposal}
+            handleChooseProposal={handleChooseProposal}
+          />
+        ))}
+
+        {newProposals.length > 0 && (
+          <Button onClick={handleSubmit}>Thêm</Button>
+        )}
       </div>
     </div>
   );

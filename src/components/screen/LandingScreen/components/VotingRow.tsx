@@ -22,7 +22,7 @@ export const VotingRow: React.FC<Props> = ({ voting }) => {
         </Link>
       </div>
       <div className="w-1/5 text-center">
-        {dayjs(voting.date).format("DD/MM/YYYY")}
+        {dayjs(voting.date * 1000 * 86400).format("DD/MM/YYYY")}
       </div>
     </div>
   );

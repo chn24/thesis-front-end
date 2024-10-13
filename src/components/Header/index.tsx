@@ -9,7 +9,6 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useAccount, useConnect, useDisconnect, useWriteContract } from "wagmi";
-import Web3 from "web3";
 import { Spinner } from "../common/Spinner";
 
 export const Header = () => {
@@ -64,20 +63,15 @@ export const Header = () => {
       });
       const data = await response.json();
       const signature = data.signature.signature;
-      const web3 = new Web3(process.env.NEXT_PUBLIC_RPC_URL);
-      const abi = getAccountManagerAbi();
-      const contract = new web3.eth.Contract(
-        abi,
-        process.env.NEXT_PUBLIC_ACCOUNT_MANAGER_ADDRESS
-      );
+      const hashEmail = data.hashEmail;
 
       try {
         await writeContractAsync({
-          abi: abi,
+          abi: getAccountManagerAbi(),
           functionName: "verify",
           // @ts-ignore
           address: process.env.NEXT_PUBLIC_ACCOUNT_MANAGER_ADDRESS,
-          args: [BigInt(user?.stakeAmount ?? 0), signature],
+          args: [BigInt(user?.stakeAmount ?? 0), signature, hashEmail],
         });
         toast.success("Xác thực thành công");
       } catch (error) {

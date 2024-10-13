@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import Web3 from "web3";
 import { getMongoDb } from "@/utils/db";
 import { getAccountManagerAbi } from "@/abi/accountManagerAbi";
+import { keccak256 } from "viem";
+import { AbiCoder } from "ethers/abi";
 
 type SignMessagePayload = {
   address: string;
@@ -141,18 +143,22 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_ACCOUNT_MANAGER_ADDRESS
     );
 
+    const abiCoder = new AbiCoder();
+
+    // @ts-ignore
+    const hashEmail = keccak256(abiCoder.encode(["string"], [email]));
+
     const hashedMessage = await contract.methods
-      .getMessageHash(String(address).toLowerCase(), amount)
+      .getMessageHash(String(address).toLowerCase(), amount, hashEmail)
       .call();
     const signature = web3.eth.accounts.sign(
       String(hashedMessage),
       "0x" + process.env.ADMIN_PRIVATE_KEY
     );
 
-    console.log(address, amount, hashedMessage);
-
     return NextResponse.json({
       signature,
+      hashEmail,
     });
   } catch (error) {
     console.error(error);

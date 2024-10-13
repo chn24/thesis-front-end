@@ -69,7 +69,7 @@ export const Delegate = () => {
             onChange={formik.handleChange}
             error={formik.touched.address && Boolean(formik.errors.address)}
             helperText={formik.touched.address && formik.errors.address}
-            placeholder="0x555BdfdBC34D551884AAca9225f92F7c7F7c3f45"
+            placeholder="Địa chỉ người uỷ quyền: 0x..."
           />
         </div>
         <Button variant="contained" type="submit">

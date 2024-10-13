@@ -1,6 +1,6 @@
 import React from "react";
-import { Nomination } from "./List";
 import { Checkbox } from "@mui/material";
+import { Nomination } from "@/utils/type";
 
 interface Props {
   nomination: Nomination;

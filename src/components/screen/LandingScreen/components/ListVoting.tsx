@@ -1,25 +1,54 @@
 "use client";
 import { useEffect, useState } from "react";
 import { VotingRow } from "./VotingRow";
+import { useReadContract } from "wagmi";
+import { getVotingManagerAbi } from "@/abi/votingManagerAbi";
+import { AbiCoder } from "ethers/abi";
 
 export type Voting = {
   contractAddress: string;
-  createdAt: Date;
-  date: Date;
+  date: number;
   index: number;
   title: string;
 };
 
 export const ListVoting = () => {
+  const { data, isPending, refetch } = useReadContract({
+    abi: getVotingManagerAbi(),
+    // @ts-ignore
+    address: process.env.NEXT_PUBLIC_VOTING_MANAGER_ADDRESS,
+    functionName: "getAllVoting",
+  });
+
   const [votings, setVotings] = useState<Voting[]>([]);
-  const getVotings = async () => {
-    const response = await fetch("/api/votings");
-    const data = await response.json();
-    setVotings(data.votings);
+  const handleParseListVoting = () => {
+    const abi = new AbiCoder();
+    const list: Voting[] = [];
+    (data as Array<Voting>).forEach((item) => {
+      const title: string = abi.decode(["string"], item.title)[0];
+      const obj: Voting = {
+        title,
+        contractAddress: item.contractAddress,
+        date: item.date,
+        index: item.index,
+      };
+      list.push(obj);
+    });
+
+    setVotings(list);
   };
   useEffect(() => {
-    void getVotings();
+    if (!isPending) {
+      handleParseListVoting();
+    }
+  }, [isPending]);
+
+  useEffect(() => {
+    if (data) {
+      handleParseListVoting();
+    }
   }, []);
+
   return (
     <div className="p-10 bg-slate-100 shadow-lg rounded-lg">
       <p className="text-3xl font-semibold">Danh sách bỏ phiếu</p>
