@@ -4,6 +4,7 @@ import { VotingRow } from "./VotingRow";
 import { useReadContract } from "wagmi";
 import { getVotingManagerAbi } from "@/abi/votingManagerAbi";
 import { AbiCoder } from "ethers/abi";
+import { votingManagerContract } from "@/const/contract";
 
 export type Voting = {
   contractAddress: string;
@@ -13,40 +14,27 @@ export type Voting = {
 };
 
 export const ListVoting = () => {
-  const { data, isPending, refetch } = useReadContract({
-    abi: getVotingManagerAbi(),
-    // @ts-ignore
-    address: process.env.NEXT_PUBLIC_VOTING_MANAGER_ADDRESS,
-    functionName: "getAllVoting",
-  });
-
   const [votings, setVotings] = useState<Voting[]>([]);
-  const handleParseListVoting = () => {
+
+  const handleGetData = async () => {
+    const data1 = await votingManagerContract.getAllVoting();
     const abi = new AbiCoder();
     const list: Voting[] = [];
-    (data as Array<Voting>).forEach((item) => {
+    data1.forEach((item) => {
       const title: string = abi.decode(["string"], item.title)[0];
       const obj: Voting = {
         title,
         contractAddress: item.contractAddress,
-        date: item.date,
-        index: item.index,
+        date: Number(item.date),
+        index: Number(item.index),
       };
       list.push(obj);
     });
-
     setVotings(list);
   };
-  useEffect(() => {
-    if (!isPending) {
-      handleParseListVoting();
-    }
-  }, [isPending]);
 
   useEffect(() => {
-    if (data) {
-      handleParseListVoting();
-    }
+    void handleGetData();
   }, []);
 
   return (

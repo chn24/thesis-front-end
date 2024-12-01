@@ -10,6 +10,7 @@ import { statusInfos } from "..";
 import { AbiCoder } from "ethers/abi";
 import { NominationItem } from "./NominationRow";
 import { Answer, Nomination, OPTION, Proposal } from "@/utils/type";
+import { getVotingContract } from "@/const/contract";
 
 interface Props {
   address: string;
@@ -22,23 +23,8 @@ export const List: React.FC<Props> = ({ address, status }) => {
     nominations: Nomination[];
   }>({ limit: 0, nominations: [] });
   const [chosenNomination, setChosenNomination] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { writeContractAsync } = useWriteContract();
-  const { data, isPending } = useReadContracts({
-    contracts: [
-      {
-        abi: getVotingAbi(),
-        // @ts-ignore
-        address,
-        functionName: "getAllNominations",
-      },
-      {
-        abi: getVotingAbi(),
-        // @ts-ignore
-        address,
-        functionName: "getAllProposals",
-      },
-    ],
-  });
 
   const handleOptionChange = (index: number, e: SelectChangeEvent<OPTION>) => {
     const value = e.target.value;
@@ -100,43 +86,49 @@ export const List: React.FC<Props> = ({ address, status }) => {
     }
   };
 
-  useEffect(() => {
-    const abi = new AbiCoder();
-
-    if (!isPending && data) {
-      const limit: number = Number((data as Array<any>)[0].result[0]);
-      const arr: Nomination[] = [...(data as Array<any>)[0].result[1]];
-      const arr2: Proposal[] = [...(data as Array<any>)[1].result];
-
-      const mockNominations: Nomination[] = [];
-      const mockProposals: Proposal[] = [];
-
-      arr.forEach((item) => {
-        const content = abi.decode(["string"], item.content)[0];
-        const obj: Nomination = {
-          index: item.index,
-          content,
-        };
-        mockNominations.push(obj);
-      });
-      arr2.forEach((item, index) => {
-        const obj: Proposal = {
-          index: index + 1,
-          content: abi.decode(["string"], item.content)[0],
-          isImportant: item.isImportant,
-          option: OPTION.AGREE,
-        };
-        mockProposals.push(obj);
-      });
-
-      setNominations({
-        limit,
-        nominations: [...mockNominations],
-      });
-
-      setProposals([...mockProposals]);
+  const handleGetInfo = async () => {
+    if (!isLoading) {
+      setIsLoading(true);
     }
-  }, [isPending]);
+    const abi = new AbiCoder();
+    const votingContract = await getVotingContract(address);
+    const listProposal = await votingContract.getAllProposals();
+    const listNomination = await votingContract.getAllNominations();
+
+    const mockProposals: Proposal[] = [];
+    const mockNominations: Nomination[] = [];
+
+    listProposal.forEach((item, index) => {
+      const content = abi.decode(["string"], item.content)[0];
+      const obj: Proposal = {
+        content,
+        index: index + 1,
+        isImportant: item.isImportant,
+        option: OPTION.AGREE,
+      };
+      mockProposals.push(obj);
+    });
+
+    listNomination[1].forEach((item) => {
+      const content = abi.decode(["string"], item.content)[0];
+      const obj: Nomination = {
+        index: item.index,
+        content,
+      };
+      mockNominations.push(obj);
+    });
+
+    setProposals([...mockProposals]);
+    setNominations({
+      limit: Number(listNomination[0]),
+      nominations: [...mockNominations],
+    });
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    void handleGetInfo();
+  }, []);
 
   return (
     <div className="p-10 bg-slate-100 shadow-lg rounded-lg flex flex-col gap-8">
@@ -158,7 +150,7 @@ export const List: React.FC<Props> = ({ address, status }) => {
             <div className="w-[70%] text-left">Đề xuất</div>
             <div className="w-1/4 text-center">Ý kiến</div>
           </div>
-          {isPending && (
+          {isLoading && (
             <div className="w-full flex justify-center items-center">
               <Spinner size={32} />
             </div>
@@ -187,7 +179,7 @@ export const List: React.FC<Props> = ({ address, status }) => {
             <div className="w-[70%] text-left">Ứng viên</div>
             <div className="w-1/5 text-center">#</div>
           </div>
-          {isPending && (
+          {isLoading && (
             <div className="w-full flex justify-center items-center">
               <Spinner size={32} />
             </div>

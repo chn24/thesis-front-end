@@ -104,14 +104,21 @@ const abi = [
   {
     inputs: [
       {
-        internalType: "bytes[]",
-        name: "contents",
-        type: "bytes[]",
-      },
-      {
-        internalType: "bool[]",
-        name: "isImportants",
-        type: "bool[]",
+        components: [
+          {
+            internalType: "bytes",
+            name: "content",
+            type: "bytes",
+          },
+          {
+            internalType: "bool",
+            name: "isImportant",
+            type: "bool",
+          },
+        ],
+        internalType: "struct IVoting.ProposalInfo[]",
+        name: "proposalInfos",
+        type: "tuple[]",
       },
     ],
     name: "addProposal",
@@ -599,9 +606,21 @@ const abi = [
   {
     inputs: [
       {
-        internalType: "bytes[]",
-        name: "contents",
-        type: "bytes[]",
+        components: [
+          {
+            internalType: "bytes",
+            name: "content",
+            type: "bytes",
+          },
+          {
+            internalType: "bool",
+            name: "isImportant",
+            type: "bool",
+          },
+        ],
+        internalType: "struct IVoting.ProposalInfo[]",
+        name: "proposalInfos",
+        type: "tuple[]",
       },
       {
         internalType: "uint16[]",
@@ -612,25 +631,6 @@ const abi = [
     name: "updateProposals",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes",
-        name: "",
-        type: "bytes",
-      },
-    ],
-    name: "validProposal",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
   {

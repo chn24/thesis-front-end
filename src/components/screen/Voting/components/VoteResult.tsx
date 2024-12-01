@@ -5,6 +5,7 @@ import { useReadContract } from "wagmi";
 import { VoteResultItem } from "./VoteResultItem";
 import { Spinner } from "@/components/common/Spinner";
 import { AbiCoder } from "ethers/abi";
+import { getVotingContract } from "@/const/contract";
 
 interface Props {
   address: string;
@@ -42,65 +43,69 @@ export const VoteResult: React.FC<Props> = ({ address }) => {
     proposalResults: [],
     nominationResults: [],
   });
-  const { data, isPending } = useReadContract({
-    abi: getVotingAbi(),
-    // @ts-ignore
-    address,
-    functionName: "getAllResults",
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const handleGetResult = async () => {
+    if (!isLoading) {
+      setIsLoading(true);
+    }
+    const contract = await getVotingContract(address);
+    const data = await contract.getAllResults();
+
+    const abi = new AbiCoder();
+    const newProposalResults: ProposalResult[] = [];
+    const newNominationResults: NominationResult[] = [];
+
+    ((data as Array<any>)[0] as Array<ResultOG>).forEach((item) => {
+      const total = Number(item.totalVote);
+
+      if (total === 0) {
+        const obj: ProposalResult = {
+          percent: 0,
+          agreeCount: 0,
+          total,
+        };
+        newProposalResults.push(obj);
+      } else {
+        const agreeCount = Number(item.agree);
+        const percent = Number(((agreeCount * 100) / total).toFixed(2));
+        const obj: ProposalResult = {
+          percent,
+          agreeCount,
+          total,
+        };
+        newProposalResults.push(obj);
+      }
+    });
+    ((data as Array<any>)[1] as Array<NominationResultOG>).forEach((item) => {
+      const totalVote = Number(item.totalVote);
+      const name = abi.decode(["string"], item.content)[0];
+      const obj: NominationResult = {
+        name,
+        totalVote,
+      };
+      newNominationResults.push(obj);
+    });
+    newNominationResults
+      .sort((result1, result2) => result1.totalVote - result2.totalVote)
+      .reverse();
+    setResults({
+      proposalResults: [...newProposalResults],
+      nominationResults: [...newNominationResults],
+    });
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    if (!isPending && data) {
-      const abi = new AbiCoder();
-      const newProposalResults: ProposalResult[] = [];
-      const newNominationResults: NominationResult[] = [];
-
-      ((data as Array<any>)[0] as Array<ResultOG>).forEach((item) => {
-        const total = Number(item.totalVote);
-
-        if (total === 0) {
-          const obj: ProposalResult = {
-            percent: 0,
-            agreeCount: 0,
-            total,
-          };
-          newProposalResults.push(obj);
-        } else {
-          const agreeCount = Number(item.agree);
-          const percent = Number(((agreeCount * 100) / total).toFixed(2));
-          const obj: ProposalResult = {
-            percent,
-            agreeCount,
-            total,
-          };
-          newProposalResults.push(obj);
-        }
-      });
-      ((data as Array<any>)[1] as Array<NominationResultOG>).forEach((item) => {
-        const totalVote = Number(item.totalVote);
-        const name = abi.decode(["string"], item.content)[0];
-        const obj: NominationResult = {
-          name,
-          totalVote,
-        };
-        newNominationResults.push(obj);
-      });
-      newNominationResults
-        .sort((result1, result2) => result1.totalVote - result2.totalVote)
-        .reverse();
-      setResults({
-        proposalResults: [...newProposalResults],
-        nominationResults: [...newNominationResults],
-      });
-    }
-  }, [isPending]);
+    void handleGetResult();
+  }, []);
 
   return (
     <div className="p-10 bg-slate-100 shadow-lg rounded-lg flex flex-col gap-5">
       <div className="w-full">
         <p className="text-3xl font-semibold">Kết quả bỏ phiếu đề xuất</p>
         <div className="mx-auto flex flex-col gap-5 mt-5 max-w-[1010px] items-center">
-          {isPending ? (
+          {isLoading ? (
             <div className="w-full flex justify-center items-center">
               <Spinner size={32} />
             </div>
@@ -122,7 +127,7 @@ export const VoteResult: React.FC<Props> = ({ address }) => {
               <p>Số phiếu bầu</p>
             </div>
           </div>
-          {isPending ? (
+          {isLoading ? (
             <div className="w-full flex justify-center items-center">
               <Spinner size={32} />
             </div>

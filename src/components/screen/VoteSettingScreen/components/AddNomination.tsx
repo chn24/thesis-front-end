@@ -8,6 +8,7 @@ import { AbiCoder } from "ethers/abi";
 import { useReadContract, useWriteContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
 import { Nomination } from "@/utils/type";
+import { getVotingContract } from "@/const/contract";
 
 interface Props {
   address: string;
@@ -16,6 +17,7 @@ interface Props {
 export const AddNomination: React.FC<Props> = ({ address }) => {
   const [newNominations, setNewNominations] = useState<string[]>([]);
   const [nominations, setNominations] = useState<Nomination[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { data, isPending } = useReadContract({
     abi: getVotingAbi(),
     // @ts-ignore
@@ -136,11 +138,17 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
     }
   };
 
-  useEffect(() => {
-    if (!isPending && data) {
+  const getNomination = async () => {
+    try {
+      if (!isLoading) {
+        setIsLoading(true);
+      }
       const abi = new AbiCoder();
+      const votingContract = await getVotingContract(address);
       const mockNominations: Nomination[] = [];
-      ((data as Array<any>)[1] as Array<Nomination>).forEach((item) => {
+      const data = await votingContract.getAllNominations();
+
+      (data[1] as Array<Nomination>).forEach((item) => {
         const content = abi.decode(["string"], item.content)[0];
         const obj: Nomination = {
           content,
@@ -151,8 +159,15 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
       });
 
       setNominations([...mockNominations]);
+      setIsLoading(false);
+    } catch (error) {
+      console.log(error);
     }
-  }, [isPending]);
+  };
+
+  useEffect(() => {
+    void getNomination();
+  }, []);
 
   return (
     <div className="px-14 py-10 bg-slate-100 rounded-xl">

@@ -8,6 +8,7 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { AbiCoder } from "ethers/abi";
 import { toast } from "react-toastify";
 import { NewProposal } from "@/utils/type";
+import { getVotingContract } from "@/const/contract";
 
 interface Props {
   address: string;
@@ -16,13 +17,8 @@ interface Props {
 export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
   const [proposals, setProposals] = useState<NewProposal[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { writeContractAsync } = useWriteContract();
-  const { data, isPending } = useReadContract({
-    abi: getVotingAbi(),
-    // @ts-ignore
-    address,
-    functionName: "getAllProposals",
-  });
 
   const handleNewProposal = () => {
     setNewProposals((prev) => [...prev, { content: "", isImportant: false }]);
@@ -84,15 +80,15 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
   const handleSubmit = async () => {
     try {
       const abi = new AbiCoder();
-      const contents: string[] = [];
-      const isImportants: boolean[] = [];
+      const submitProposals: NewProposal[] = [];
 
       newProposals.forEach((proposal) => {
         const content = abi.encode(["string"], [proposal.content]);
-        contents.push(content);
-        console.log(content);
-
-        isImportants.push(proposal.isImportant);
+        const obj: NewProposal = {
+          content: content,
+          isImportant: proposal.isImportant,
+        };
+        submitProposals.push(obj);
       });
 
       await writeContractAsync({
@@ -100,7 +96,7 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         functionName: "addProposal",
         // @ts-ignore
         address,
-        args: [contents, isImportants],
+        args: [submitProposals],
       });
       toast.success("Thêm đề xuất thành công");
     } catch (error) {
@@ -124,12 +120,17 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
       const abi = new AbiCoder();
       const contents: string[] = [];
       const ids: number[] = [];
+      const submitProposals: NewProposal[] = [];
 
       proposals.forEach((proposal, index) => {
         if (proposal.isChosen) {
           const content = abi.encode(["string"], [proposal.content]);
-          contents.push(content);
+          const obj: NewProposal = {
+            content,
+            isImportant: proposal.isImportant,
+          };
           ids.push(index + 1);
+          submitProposals.push(obj);
         }
       });
 
@@ -141,7 +142,7 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         functionName: "updateProposals",
         // @ts-ignore
         address,
-        args: [contents, ids],
+        args: [submitProposals, ids],
       });
       toast.success("Sửa thành công");
     } catch (error) {
@@ -160,24 +161,35 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
     }
   };
 
-  useEffect(() => {
-    if (!isPending && data) {
+  const getProposal = async () => {
+    try {
+      if (!isLoading) {
+        setIsLoading(true);
+      }
       const abi = new AbiCoder();
-      const mockProposals: NewProposal[] = [];
+      const votingContract = await getVotingContract(address);
+      const listProposal = await votingContract.getAllProposals();
 
-      (data as Array<any>).forEach((item) => {
+      const mockProposals: NewProposal[] = [];
+      listProposal.forEach((item) => {
+        const content = abi.decode(["string"], item.content)[0];
         const obj: NewProposal = {
-          content: abi.decode(["string"], item.content)[0],
+          content,
           isImportant: item.isImportant,
           isChosen: false,
         };
-
         mockProposals.push(obj);
       });
-
       setProposals([...mockProposals]);
+      setIsLoading(false);
+    } catch (error) {
+      console.log("error: ", error);
     }
-  }, [isPending]);
+  };
+
+  useEffect(() => {
+    void getProposal();
+  }, []);
 
   return (
     <div className="px-14 py-10 bg-slate-100 rounded-xl">

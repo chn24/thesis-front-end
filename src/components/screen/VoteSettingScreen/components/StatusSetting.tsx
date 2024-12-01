@@ -4,21 +4,25 @@ import React, { useEffect, useState } from "react";
 import { useReadContracts, useWriteContract } from "wagmi";
 import { statusInfos } from "../../Voting";
 import { toast } from "react-toastify";
+import { getVotingContract, provider } from "@/const/contract";
+import { ContractTransactionResponse, ethers } from "ethers";
+import { Voting } from "@/types/contract/voting";
 
 interface Props {
-  status: number;
   address: string;
-  refetch: () => Promise<void>;
 }
 
-export const StatusSetting: React.FC<Props> = ({
-  status,
-  address,
-  refetch,
-}) => {
+export const StatusSetting: React.FC<Props> = ({ address }) => {
   const { writeContractAsync } = useWriteContract();
   const [amount, setAmount] = useState<number>(0);
-  const { data } = useReadContracts({
+  const [info, setInfo] = useState<{
+    limit: number;
+    status: number;
+  }>({
+    limit: 0,
+    status: 0,
+  });
+  const { data, refetch } = useReadContracts({
     contracts: [
       {
         // @ts-ignore
@@ -26,8 +30,15 @@ export const StatusSetting: React.FC<Props> = ({
         functionName: "limitNominationVoted",
         abi: getVotingAbi(),
       },
+      {
+        // @ts-ignore
+        address,
+        functionName: "status",
+        abi: getVotingAbi(),
+      },
     ],
   });
+  console.log("data: ", data);
 
   const handleSetStatus = async (status: number) => {
     try {
@@ -58,6 +69,10 @@ export const StatusSetting: React.FC<Props> = ({
 
   const handleSetLimit = async () => {
     try {
+      // const contract = await getVotingContract(address);
+      // const tx = (await contract.setLimitNominationVoted(
+      //   amount
+      // )) as unknown as ContractTransactionResponse;
       await writeContractAsync({
         abi: getVotingAbi(),
         functionName: "setLimitNominationVoted",
@@ -65,9 +80,11 @@ export const StatusSetting: React.FC<Props> = ({
         address,
         args: [amount],
       });
+      // await tx.wait();
       toast.success("Thay đổi giới hạn thành công");
       await refetch();
     } catch (error) {
+      console.log("error: ", error);
       // @ts-ignore
       if (Object.keys(error).includes("cause")) {
         // @ts-ignore
@@ -83,6 +100,10 @@ export const StatusSetting: React.FC<Props> = ({
     }
   };
 
+  // useEffect(() => {
+  //   void getInfo();
+  // }, []);
+
   return (
     <div className="px-14 py-10 bg-slate-100 rounded-xl flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -90,9 +111,9 @@ export const StatusSetting: React.FC<Props> = ({
           <p className="text-3xl font-semibold">Trạng thái</p>
           <p
             className="text-lg font-semibold"
-            style={{ color: statusInfos[Number(status)].textColor }}
+            style={{ color: statusInfos[Number(info.status)].textColor }}
           >
-            {statusInfos[status].text}
+            {statusInfos[data ? (data as Array<any>)[1].result : 0].text}
           </p>
         </div>
         <div className="flex justify-center gap-5">

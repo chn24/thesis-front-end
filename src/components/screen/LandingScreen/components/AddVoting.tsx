@@ -27,8 +27,6 @@ export const AddVoting = () => {
       date: new Date(),
     },
     onSubmit: async (values) => {
-      console.log(values);
-      console.log((values.date.getTime() / (1000 * 86400)).toFixed());
       const abi = new AbiCoder();
       const title = abi.encode(["string"], [values.title]);
       const date = (values.date.getTime() / (1000 * 86400)).toFixed();
@@ -48,6 +46,8 @@ export const AddVoting = () => {
       });
       toast.success("Thêm cuộc bầu chọn thành công");
     } catch (error) {
+      console.log("error: ", error);
+      
       // @ts-ignore
       if (Object.keys(error).includes("cause")) {
         toast.error(

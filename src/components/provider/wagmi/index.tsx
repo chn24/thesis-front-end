@@ -22,6 +22,7 @@ export const config = createConfig({
 const queryClient = new QueryClient();
 
 export const WagmiContainer: React.FC<Props> = ({ children }) => {
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
