@@ -9,6 +9,7 @@ import { useReadContract, useWriteContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
 import { Nomination } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 interface Props {
   address: string;
@@ -68,6 +69,7 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
 
   const handleSubmit = async () => {
     try {
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const contents: string[] = [];
 
@@ -75,33 +77,29 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
         const content = abi.encode(["string"], [nomination]);
         contents.push(content);
       });
-
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "addNomination",
-        // @ts-ignore
-        address,
-        args: [contents],
-      });
+      const tx = (await contract.addNomination(
+        contents
+      )) as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Thêm ứng viên thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Thêm ứng viên thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Thêm ứng viên thất bại");
       }
     }
   };
 
   const handleUpdate = async () => {
     try {
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const contents: string[] = [];
       const ids: number[] = [];
@@ -114,26 +112,23 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
         }
       });
 
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "updateNominations",
-        // @ts-ignore
-        address,
-        args: [contents, ids],
-      });
+      const tx = (await contract.updateNominations(
+        contents,
+        ids
+      )) as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Sửa ứng viên thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
-          `Sửa ứng viên thất bại: ${
+          `Thay đổi ứng viên thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Sửa ứng viên thất bại");
       }
     }
   };

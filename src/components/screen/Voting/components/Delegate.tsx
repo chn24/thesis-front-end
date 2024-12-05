@@ -6,6 +6,8 @@ import { isAddress } from "web3-validator";
 import { toast } from "react-toastify";
 import { useWriteContract } from "wagmi";
 import { getAccountManagerAbi } from "@/abi/accountManagerAbi";
+import { getAccountManagerContract, getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 const validationSchema = yup.object({
   address: yup.string().required("Hãy nhập địa chỉ ngừoi được uỷ quyền"),
@@ -30,26 +32,23 @@ export const Delegate = () => {
         toast.warning("Địa chỉ không hợp lệ");
         return;
       }
-      await writeContractAsync({
-        abi: getAccountManagerAbi(),
-        // @ts-ignore
-        address: process.env.NEXT_PUBLIC_ACCOUNT_MANAGER_ADDRESS,
-        functionName: "delegate",
-        args: [address],
-      });
+      const contract = await getAccountManagerContract();
+      const tx = (await contract.delegate(
+        address
+      )) as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Uỷ quyền thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Uỷ quyền thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Uỷ quyền thất bại");
       }
     }
   };

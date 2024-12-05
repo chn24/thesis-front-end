@@ -1,14 +1,13 @@
 "use client";
-import { getVotingAbi } from "@/abi/votingAbi";
 import { Button, IconButton } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useReadContract, useWriteContract } from "wagmi";
 import { ProposalItem } from "./ProposalItem";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { AbiCoder } from "ethers/abi";
 import { toast } from "react-toastify";
 import { NewProposal } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 interface Props {
   address: string;
@@ -18,7 +17,6 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
   const [proposals, setProposals] = useState<NewProposal[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { writeContractAsync } = useWriteContract();
 
   const handleNewProposal = () => {
     setNewProposals((prev) => [...prev, { content: "", isImportant: false }]);
@@ -79,6 +77,7 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
 
   const handleSubmit = async () => {
     try {
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const submitProposals: NewProposal[] = [];
 
@@ -91,32 +90,29 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         submitProposals.push(obj);
       });
 
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "addProposal",
-        // @ts-ignore
-        address,
-        args: [submitProposals],
-      });
+      const tx = (await contract.addProposal(
+        submitProposals
+      )) as unknown as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Thêm đề xuất thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Thêm đề xuất thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Thêm thất bại");
       }
     }
   };
 
   const handleUpdate = async () => {
     try {
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const contents: string[] = [];
       const ids: number[] = [];
@@ -137,26 +133,23 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
       if (contents.length === 0) {
         return;
       }
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "updateProposals",
-        // @ts-ignore
-        address,
-        args: [submitProposals, ids],
-      });
+      const tx = (await contract.updateProposals(
+        submitProposals,
+        ids
+      )) as unknown as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Sửa thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
-          `Sửa thất bại: ${
+          `Thay đổi đề xuất thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Sửa thất bại");
       }
     }
   };

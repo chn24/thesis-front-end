@@ -11,6 +11,7 @@ import { AbiCoder } from "ethers/abi";
 import { NominationItem } from "./NominationRow";
 import { Answer, Nomination, OPTION, Proposal } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 interface Props {
   address: string;
@@ -61,69 +62,74 @@ export const List: React.FC<Props> = ({ address, status }) => {
       });
 
       const abi = getVotingAbi();
-
-      await writeContractAsync({
-        abi,
-        functionName: "vote",
-        // @ts-ignore
-        address,
-        args: [answers, chosenNomination],
-      });
+      const contract = await getVotingContract(address);
+      const tx = (await contract.vote(
+        answers,
+        chosenNomination
+      )) as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Bỏ phiếu thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Bỏ phiếu thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Bỏ phiếu thất bại");
       }
     }
   };
 
   const handleGetInfo = async () => {
-    if (!isLoading) {
-      setIsLoading(true);
+    try {
+      if (!isLoading) {
+        setIsLoading(true);
+      }
+
+      const abi = new AbiCoder();
+      const votingContract = await getVotingContract(address);
+
+      const listProposal = await votingContract.getAllProposals();
+      const listNomination = await votingContract.getAllNominations();
+
+      const mockProposals: Proposal[] = [];
+      const mockNominations: Nomination[] = [];
+      console.log("listProposal: ", listProposal);
+      console.log("listNomination: ", listNomination);
+
+      listProposal.forEach((item, index) => {
+        const content = abi.decode(["string"], item.content)[0];
+        const obj: Proposal = {
+          content,
+          index: index + 1,
+          isImportant: item.isImportant,
+          option: OPTION.AGREE,
+        };
+        mockProposals.push(obj);
+      });
+
+      listNomination[1].forEach((item) => {
+        const content = abi.decode(["string"], item.content)[0];
+        const obj: Nomination = {
+          index: item.index,
+          content,
+        };
+        mockNominations.push(obj);
+      });
+
+      setProposals([...mockProposals]);
+      setNominations({
+        limit: Number(listNomination[0]),
+        nominations: [...mockNominations],
+      });
+      setIsLoading(false);
+    } catch (error) {
+      console.log("error: ", error);
     }
-    const abi = new AbiCoder();
-    const votingContract = await getVotingContract(address);
-    const listProposal = await votingContract.getAllProposals();
-    const listNomination = await votingContract.getAllNominations();
-
-    const mockProposals: Proposal[] = [];
-    const mockNominations: Nomination[] = [];
-
-    listProposal.forEach((item, index) => {
-      const content = abi.decode(["string"], item.content)[0];
-      const obj: Proposal = {
-        content,
-        index: index + 1,
-        isImportant: item.isImportant,
-        option: OPTION.AGREE,
-      };
-      mockProposals.push(obj);
-    });
-
-    listNomination[1].forEach((item) => {
-      const content = abi.decode(["string"], item.content)[0];
-      const obj: Nomination = {
-        index: item.index,
-        content,
-      };
-      mockNominations.push(obj);
-    });
-
-    setProposals([...mockProposals]);
-    setNominations({
-      limit: Number(listNomination[0]),
-      nominations: [...mockNominations],
-    });
-    setIsLoading(false);
   };
 
   useEffect(() => {
