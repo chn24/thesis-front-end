@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { List } from "./components/List";
 import { useReadContract } from "wagmi";
 import { getVotingAbi } from "@/abi/votingAbi";
@@ -58,6 +58,7 @@ export const VotingScreen: React.FC<Props> = ({ address }) => {
     address,
     functionName: "status",
   });
+  const [reloadResult, setReloadResult] = useState<boolean>(false);
 
   return (
     <div className="px-20 py-10 flex flex-col gap-5">
@@ -72,8 +73,12 @@ export const VotingScreen: React.FC<Props> = ({ address }) => {
         </div>
       )}
       <Delegate />
-      <List status={status} address={address} />
-      <VoteResult address={address} />
+      <List address={address} setReloadResult={setReloadResult} />
+      <VoteResult
+        address={address}
+        reloadResult={reloadResult}
+        setReloadResult={setReloadResult}
+      />
     </div>
   );
 };

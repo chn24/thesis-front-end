@@ -34,8 +34,11 @@ export async function GET(request: NextRequest) {
       data = jwt.verify(String(accessToken?.value), ACCESS_TOKEN_SECRET);
     } catch (error) {
       if (String(error).includes("jwt expired")) {
+        console.log("var expired");
+
         isExpired = true;
         data = jwt.verify(String(refreshToken?.value), REFRESH_TOKEN_SECRET);
+        console.log("data: ", data);
 
         // @ts-ignore
         const email = data.email;
@@ -74,12 +77,15 @@ export async function GET(request: NextRequest) {
 
         cookies().set("accessToken", newAccessToken);
       } else {
+        console.log("varrrr 2");
+
         return NextResponse.json(
           { error: "Internal Server Error" },
           { status: 500 }
         );
       }
     }
+    console.log("varrr");
 
     // @ts-ignore
     const email = data.email;

@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    console.log("user: ", user);
 
     if (!user) {
       return NextResponse.json({ error: "user not found!" }, { status: 404 });
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
 
       await userCollection.updateOne(
         {
-          userId: user.userId,
+          email: user.email,
         },
         {
           $set: {

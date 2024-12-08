@@ -1,6 +1,6 @@
 "use client";
 import { getVotingAbi } from "@/abi/votingAbi";
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
 import { VoteResultItem } from "./VoteResultItem";
 import { Spinner } from "@/components/common/Spinner";
@@ -9,6 +9,8 @@ import { getVotingContract } from "@/const/contract";
 
 interface Props {
   address: string;
+  reloadResult: boolean;
+  setReloadResult: Dispatch<SetStateAction<boolean>>;
 }
 
 export type Result = {
@@ -38,7 +40,11 @@ type NominationResultOG = {
   totalVote: number;
 };
 
-export const VoteResult: React.FC<Props> = ({ address }) => {
+export const VoteResult: React.FC<Props> = ({
+  address,
+  reloadResult,
+  setReloadResult,
+}) => {
   const [results, setResults] = useState<Result>({
     proposalResults: [],
     nominationResults: [],
@@ -93,12 +99,21 @@ export const VoteResult: React.FC<Props> = ({ address }) => {
       proposalResults: [...newProposalResults],
       nominationResults: [...newNominationResults],
     });
+    if (setReloadResult) {
+      setReloadResult(false);
+    }
     setIsLoading(false);
   };
 
   useEffect(() => {
     void handleGetResult();
   }, []);
+
+  useEffect(() => {
+    if (reloadResult) {
+      void handleGetResult();
+    }
+  }, [reloadResult]);
 
   return (
     <div className="p-10 bg-slate-100 shadow-lg rounded-lg flex flex-col gap-5">

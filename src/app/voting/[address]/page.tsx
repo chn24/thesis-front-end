@@ -1,9 +1,14 @@
 "use client";
-import { VotingScreen } from "@/components/screen/Voting";
+// import { VotingScreen } from "@/components/screen/Voting";
 import { userStore } from "@/store/userStore";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
+import dynamic from "next/dynamic";
+
+const VotingScreen = dynamic<{ address: string }>(() =>
+  import("../../../components/screen/Voting").then((mod) => mod.VotingScreen)
+);
 
 export default function VotingPage({
   params,

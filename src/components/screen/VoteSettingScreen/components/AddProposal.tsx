@@ -1,14 +1,14 @@
 "use client";
-import { getVotingAbi } from "@/abi/votingAbi";
 import { Button, IconButton } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useReadContract, useWriteContract } from "wagmi";
 import { ProposalItem } from "./ProposalItem";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { AbiCoder } from "ethers/abi";
 import { toast } from "react-toastify";
 import { NewProposal } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 interface Props {
   address: string;
@@ -18,7 +18,8 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
   const [proposals, setProposals] = useState<NewProposal[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { writeContractAsync } = useWriteContract();
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const handleNewProposal = () => {
     setNewProposals((prev) => [...prev, { content: "", isImportant: false }]);
@@ -79,6 +80,8 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
 
   const handleSubmit = async () => {
     try {
+      setIsAdding(true);
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const submitProposals: NewProposal[] = [];
 
@@ -91,40 +94,39 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         submitProposals.push(obj);
       });
 
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "addProposal",
-        // @ts-ignore
-        address,
-        args: [submitProposals],
-      });
+      const tx = (await contract.addProposal(
+        submitProposals
+      )) as unknown as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Thêm đề xuất thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Thêm đề xuất thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Thêm thất bại");
       }
     }
+    setIsAdding(false);
   };
 
   const handleUpdate = async () => {
     try {
+      setIsUpdating(true);
+      const contract = await getVotingContract(address);
       const abi = new AbiCoder();
-      const contents: string[] = [];
       const ids: number[] = [];
       const submitProposals: NewProposal[] = [];
 
       proposals.forEach((proposal, index) => {
         if (proposal.isChosen) {
           const content = abi.encode(["string"], [proposal.content]);
+
           const obj: NewProposal = {
             content,
             isImportant: proposal.isImportant,
@@ -134,31 +136,32 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         }
       });
 
-      if (contents.length === 0) {
+      if (submitProposals.length === 0) {
+        setIsUpdating(false);
+        toast.warning("Hãy chọn đề xuất cần sửa");
         return;
       }
-      await writeContractAsync({
-        abi: getVotingAbi(),
-        functionName: "updateProposals",
-        // @ts-ignore
-        address,
-        args: [submitProposals, ids],
-      });
+
+      const tx = (await contract.updateProposals(
+        submitProposals,
+        ids
+      )) as unknown as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Sửa thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
-          `Sửa thất bại: ${
+          `Thay đổi đề xuất thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Sửa thất bại");
       }
     }
+    setIsUpdating(false);
   };
 
   const getProposal = async () => {
@@ -227,7 +230,9 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
                 : ""
             }`}
           >
-            <Button onClick={handleUpdate}>Sửa</Button>
+            <LoadingButton loading={isUpdating} onClick={handleUpdate}>
+              Sửa
+            </LoadingButton>
           </div>
         )}
 
@@ -245,7 +250,9 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         ))}
 
         {newProposals.length > 0 && (
-          <Button onClick={handleSubmit}>Thêm</Button>
+          <LoadingButton loading={isAdding} onClick={handleSubmit}>
+            Thêm
+          </LoadingButton>
         )}
       </div>
     </div>

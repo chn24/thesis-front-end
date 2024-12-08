@@ -1,9 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { ProposalRow } from "./ProposalRow";
-import { Button, SelectChangeEvent } from "@mui/material";
-import { useReadContract, useReadContracts, useWriteContract } from "wagmi";
-import { getVotingAbi } from "@/abi/votingAbi";
+import { SelectChangeEvent } from "@mui/material";
 import { toast } from "react-toastify";
 import { Spinner } from "@/components/common/Spinner";
 import { statusInfos } from "..";
@@ -11,20 +9,23 @@ import { AbiCoder } from "ethers/abi";
 import { NominationItem } from "./NominationRow";
 import { Answer, Nomination, OPTION, Proposal } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 interface Props {
   address: string;
-  status: unknown;
+  setReloadResult: Dispatch<SetStateAction<boolean>>;
 }
-export const List: React.FC<Props> = ({ address, status }) => {
+export const List: React.FC<Props> = ({ address, setReloadResult }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [nominations, setNominations] = useState<{
     limit: number;
     nominations: Nomination[];
   }>({ limit: 0, nominations: [] });
+  const [status, setStatus] = useState<number>(0);
   const [chosenNomination, setChosenNomination] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { writeContractAsync } = useWriteContract();
+  const [isVoting, setIsVoting] = useState<boolean>(false);
 
   const handleOptionChange = (index: number, e: SelectChangeEvent<OPTION>) => {
     const value = e.target.value;
@@ -51,6 +52,7 @@ export const List: React.FC<Props> = ({ address, status }) => {
 
   const handleSubmit = async () => {
     try {
+      setIsVoting(true);
       const answers: Answer[] = [];
       proposals.forEach((proposal) => {
         const answer: Answer = {
@@ -60,70 +62,77 @@ export const List: React.FC<Props> = ({ address, status }) => {
         answers.push(answer);
       });
 
-      const abi = getVotingAbi();
-
-      await writeContractAsync({
-        abi,
-        functionName: "vote",
-        // @ts-ignore
-        address,
-        args: [answers, chosenNomination],
-      });
+      const contract = await getVotingContract(address);
+      const tx = (await contract.vote(
+        answers,
+        chosenNomination
+      )) as ContractTransactionResponse;
+      await tx.wait();
+      setReloadResult(true);
       toast.success("Bỏ phiếu thành công");
     } catch (error) {
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
-        // @ts-ignore
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
           `Bỏ phiếu thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Bỏ phiếu thất bại");
       }
     }
+    setIsVoting(false);
   };
 
   const handleGetInfo = async () => {
-    if (!isLoading) {
-      setIsLoading(true);
+    try {
+      if (!isLoading) {
+        setIsLoading(true);
+      }
+
+      const abi = new AbiCoder();
+      const votingContract = await getVotingContract(address);
+
+      const listProposal = await votingContract.getAllProposals();
+      const listNomination = await votingContract.getAllNominations();
+
+      const mockProposals: Proposal[] = [];
+      const mockNominations: Nomination[] = [];
+
+      const contractStatus = await votingContract.status();
+
+      listProposal.forEach((item, index) => {
+        const content = abi.decode(["string"], item.content)[0];
+        const obj: Proposal = {
+          content,
+          index: index + 1,
+          isImportant: item.isImportant,
+          option: OPTION.AGREE,
+        };
+        mockProposals.push(obj);
+      });
+
+      listNomination[1].forEach((item) => {
+        const content = abi.decode(["string"], item.content)[0];
+        const obj: Nomination = {
+          index: item.index,
+          content,
+        };
+        mockNominations.push(obj);
+      });
+
+      setProposals([...mockProposals]);
+      setNominations({
+        limit: Number(listNomination[0]),
+        nominations: [...mockNominations],
+      });
+      setStatus(Number(contractStatus));
+      setIsLoading(false);
+    } catch (error) {
+      console.log("error: ", error);
     }
-    const abi = new AbiCoder();
-    const votingContract = await getVotingContract(address);
-    const listProposal = await votingContract.getAllProposals();
-    const listNomination = await votingContract.getAllNominations();
-
-    const mockProposals: Proposal[] = [];
-    const mockNominations: Nomination[] = [];
-
-    listProposal.forEach((item, index) => {
-      const content = abi.decode(["string"], item.content)[0];
-      const obj: Proposal = {
-        content,
-        index: index + 1,
-        isImportant: item.isImportant,
-        option: OPTION.AGREE,
-      };
-      mockProposals.push(obj);
-    });
-
-    listNomination[1].forEach((item) => {
-      const content = abi.decode(["string"], item.content)[0];
-      const obj: Nomination = {
-        index: item.index,
-        content,
-      };
-      mockNominations.push(obj);
-    });
-
-    setProposals([...mockProposals]);
-    setNominations({
-      limit: Number(listNomination[0]),
-      nominations: [...mockNominations],
-    });
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -194,12 +203,13 @@ export const List: React.FC<Props> = ({ address, status }) => {
           ))}
         </div>
       </div>
-      <button
+      <LoadingButton
+        loading={isVoting}
         className="mx-auto w-max px-4 py-2 text-white text-sm uppercase bg-[#1976d2] rounded-lg hover:opacity-70 duration-300"
         onClick={handleSubmit}
       >
         Xác nhận
-      </button>
+      </LoadingButton>
     </div>
   );
 };
