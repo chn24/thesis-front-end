@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { NewProposal } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
 import { ContractTransactionResponse } from "ethers";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 interface Props {
   address: string;
@@ -17,6 +18,8 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
   const [newProposals, setNewProposals] = useState<NewProposal[]>([]);
   const [proposals, setProposals] = useState<NewProposal[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const handleNewProposal = () => {
     setNewProposals((prev) => [...prev, { content: "", isImportant: false }]);
@@ -77,6 +80,7 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
 
   const handleSubmit = async () => {
     try {
+      setIsAdding(true);
       const contract = await getVotingContract(address);
       const abi = new AbiCoder();
       const submitProposals: NewProposal[] = [];
@@ -108,19 +112,21 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         );
       }
     }
+    setIsAdding(false);
   };
 
   const handleUpdate = async () => {
     try {
+      setIsUpdating(true);
       const contract = await getVotingContract(address);
       const abi = new AbiCoder();
-      const contents: string[] = [];
       const ids: number[] = [];
       const submitProposals: NewProposal[] = [];
 
       proposals.forEach((proposal, index) => {
         if (proposal.isChosen) {
           const content = abi.encode(["string"], [proposal.content]);
+
           const obj: NewProposal = {
             content,
             isImportant: proposal.isImportant,
@@ -130,9 +136,12 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         }
       });
 
-      if (contents.length === 0) {
+      if (submitProposals.length === 0) {
+        setIsUpdating(false);
+        toast.warning("Hãy chọn đề xuất cần sửa");
         return;
       }
+
       const tx = (await contract.updateProposals(
         submitProposals,
         ids
@@ -152,6 +161,7 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         );
       }
     }
+    setIsUpdating(false);
   };
 
   const getProposal = async () => {
@@ -220,7 +230,9 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
                 : ""
             }`}
           >
-            <Button onClick={handleUpdate}>Sửa</Button>
+            <LoadingButton loading={isUpdating} onClick={handleUpdate}>
+              Sửa
+            </LoadingButton>
           </div>
         )}
 
@@ -238,7 +250,9 @@ export const AddProposal: React.FC<Props> = ({ address }) => {
         ))}
 
         {newProposals.length > 0 && (
-          <Button onClick={handleSubmit}>Thêm</Button>
+          <LoadingButton loading={isAdding} onClick={handleSubmit}>
+            Thêm
+          </LoadingButton>
         )}
       </div>
     </div>

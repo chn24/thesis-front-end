@@ -1,7 +1,6 @@
 import { getVotingAbi } from "@/abi/votingAbi";
 import { Button, TextField } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useWriteContract } from "wagmi";
 import { statusInfos } from "../../Voting";
 import { toast } from "react-toastify";
 import { getVotingContract } from "@/const/contract";
@@ -13,7 +12,6 @@ interface Props {
 }
 
 export const StatusSetting: React.FC<Props> = ({ address }) => {
-  const { writeContractAsync } = useWriteContract();
   const [amount, setAmount] = useState<number>(0);
   const [info, setInfo] = useState<{
     limit: number;

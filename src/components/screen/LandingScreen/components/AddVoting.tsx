@@ -11,15 +11,19 @@ import { useWriteContract } from "wagmi";
 import { getVotingManagerAbi } from "@/abi/votingManagerAbi";
 import { toast } from "react-toastify";
 import { WriteContractErrorType } from "viem";
+import { getVotingManagerContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 const validationSchema = yup.object({
   title: yup.string().required("Hãy nhập tiêu đề cuộc họp"),
   date: yup.date().required("Hãy chọn ngày họp"),
 });
 
-export const AddVoting = () => {
-  const { data, writeContractAsync, isPending, isSuccess, error, isError } =
-    useWriteContract();
+interface Props {
+  handleGetData: () => Promise<void>;
+}
+
+export const AddVoting: React.FC<Props> = ({ handleGetData }) => {
   const formik = useFormik({
     validationSchema,
     initialValues: {
@@ -37,27 +41,26 @@ export const AddVoting = () => {
 
   const handleAddVoting = async (title: string, date: number) => {
     try {
-      await writeContractAsync({
-        abi: getVotingManagerAbi(),
-        functionName: "createVoting",
-        // @ts-ignore
-        address: process.env.NEXT_PUBLIC_VOTING_MANAGER_ADDRESS,
-        args: [title, date],
-      });
+      const contract = await getVotingManagerContract();
+      const tx = (await contract.createVoting(
+        title,
+        date
+      )) as ContractTransactionResponse;
+      await tx.wait();
       toast.success("Thêm cuộc bầu chọn thành công");
+      await handleGetData();
     } catch (error) {
       console.log("error: ", error);
-      
       // @ts-ignore
-      if (Object.keys(error).includes("cause")) {
+      if (error.code === 4001) {
+        toast.error("Người dùng huỷ giao dịch");
+      } else {
         toast.error(
-          `Thêm thất bại: ${
+          `Thêm bầu cử thất bại: ${
             // @ts-ignore
-            error.cause.details ? error.cause.details : error.cause.reason
+            error.shortMessage.slice(20)
           }`
         );
-      } else {
-        toast.error("Thêm thất bại");
       }
     }
   };

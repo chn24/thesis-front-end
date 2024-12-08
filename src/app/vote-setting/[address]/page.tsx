@@ -28,6 +28,10 @@ export default function VoteSettingPage({
         }
       })
       .then((data: any) => {
+        console.log("user data: ", data);
+        if (data.user.role !== "ADMIN") {
+          router.push("/forbiden");
+        }
         if (data) {
           setUser(data.user);
         }

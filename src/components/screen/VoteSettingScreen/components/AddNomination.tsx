@@ -5,8 +5,6 @@ import AddCircleIcon from "@mui/icons-material/AddCircle";
 import { NominationItem } from "./NominationItem";
 import { toast } from "react-toastify";
 import { AbiCoder } from "ethers/abi";
-import { useReadContract, useWriteContract } from "wagmi";
-import { getVotingAbi } from "@/abi/votingAbi";
 import { Nomination } from "@/utils/type";
 import { getVotingContract } from "@/const/contract";
 import { ContractTransactionResponse } from "ethers";
@@ -19,13 +17,6 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
   const [newNominations, setNewNominations] = useState<string[]>([]);
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { data, isPending } = useReadContract({
-    abi: getVotingAbi(),
-    // @ts-ignore
-    address,
-    functionName: "getAllNominations",
-  });
-  const { writeContractAsync } = useWriteContract();
 
   const handleNewNomination = () => {
     setNewNominations((prev) => [...prev, ""]);
@@ -111,6 +102,11 @@ export const AddNomination: React.FC<Props> = ({ address }) => {
           ids.push(nomination.index);
         }
       });
+
+      const total = await contract.totalNomination();
+      console.log("total: ", total);
+
+      console.log("ids: ", ids);
 
       const tx = (await contract.updateNominations(
         contents,

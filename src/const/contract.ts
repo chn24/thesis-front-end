@@ -45,7 +45,7 @@ export const getVotingManagerContract = async () => {
   const signer = await provider.getSigner();
   const contract = new ethers.Contract(
     votingManagerAddress,
-    getVotingAbi(),
+    getVotingManagerAbi(),
     signer
   ) as unknown as VotingManager;
   return contract;

@@ -4,9 +4,7 @@ import { useFormik } from "formik";
 import { Button, TextField } from "@mui/material";
 import { isAddress } from "web3-validator";
 import { toast } from "react-toastify";
-import { useWriteContract } from "wagmi";
-import { getAccountManagerAbi } from "@/abi/accountManagerAbi";
-import { getAccountManagerContract, getVotingContract } from "@/const/contract";
+import { getAccountManagerContract } from "@/const/contract";
 import { ContractTransactionResponse } from "ethers";
 
 const validationSchema = yup.object({
@@ -14,7 +12,6 @@ const validationSchema = yup.object({
 });
 
 export const Delegate = () => {
-  const { writeContractAsync } = useWriteContract();
   const formik = useFormik({
     validationSchema,
     initialValues: {

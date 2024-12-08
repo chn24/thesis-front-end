@@ -1,5 +1,5 @@
 "use client";
-import { getAccountManagerAbi } from "@/abi/accountManagerAbi";
+
 import useOutsideClick from "@/hooks/useOutsideClick";
 import { userStore } from "@/store/userStore";
 import { formatAddress } from "@/utils/format";
@@ -8,8 +8,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useRef, useState } from "react";
 import { toast } from "react-toastify";
-import { useAccount, useConnect, useDisconnect, useWriteContract } from "wagmi";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { Spinner } from "../common/Spinner";
+import { getAccountManagerContract } from "@/const/contract";
+import { ContractTransactionResponse } from "ethers";
 
 export const Header = () => {
   const router = useRouter();
@@ -23,12 +25,6 @@ export const Header = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const user = userStore((state) => state.user);
-  const {
-    data: hash,
-    writeContractAsync,
-    isError,
-    isSuccess,
-  } = useWriteContract();
 
   useOutsideClick([menuRef], () => {
     if (isOpen) {
@@ -66,26 +62,25 @@ export const Header = () => {
       const hashEmail = data.hashEmail;
 
       try {
-        await writeContractAsync({
-          abi: getAccountManagerAbi(),
-          functionName: "verify",
-          // @ts-ignore
-          address: process.env.NEXT_PUBLIC_ACCOUNT_MANAGER_ADDRESS,
-          args: [BigInt(user?.stakeAmount ?? 0), signature, hashEmail],
-        });
+        const contract = await getAccountManagerContract();
+        const tx = (await contract.verify(
+          BigInt(user?.stakeAmount ?? 0),
+          signature,
+          hashEmail
+        )) as ContractTransactionResponse;
+        await tx.wait();
         toast.success("Xác thực thành công");
       } catch (error) {
         // @ts-ignore
-        if (Object.keys(error).includes("cause")) {
-          // @ts-ignore
+        if (error.code === 4001) {
+          toast.error("Người dùng huỷ giao dịch");
+        } else {
           toast.error(
             `Xác thực thất bại: ${
               // @ts-ignore
-              error.cause.details ? error.cause.details : error.cause.reason
+              error.shortMessage.slice(20)
             }`
           );
-        } else {
-          toast.error("Xác thực thất bại");
         }
       }
       setIsSigning(false);
@@ -113,6 +108,7 @@ export const Header = () => {
       className={`flex px-10 py-5 justify-between border-b-[1px] border-[#E8E8E8] ${
         pathname === "/login" ? "hidden" : ""
       }`}
+      suppressHydrationWarning
     >
       <Link href="/" className="text-xl font-semibold">
         Thesis
@@ -135,7 +131,7 @@ export const Header = () => {
             className="cursor-pointer py-1 px-3 w-[155px] bg-[#1976d2] hover:bg-[#518eca] border-none rounded-[30px] text-sm max-sm:text-xs text-[#c5dff9] uppercase "
             onClick={handleConnect}
           >
-            Connect wallet
+            <p>Connect wallet</p>
           </div>
         )}
         <div className="relative" ref={menuRef}>
